@@ -4,27 +4,28 @@ import os
 # 在這裡把要爬取目錄的網址放進去
 # 範例 放入 https://yuihuang.com/syntax/  ，會抓取超連結文字為Link的網址，並進去抓cpp&python code
 
-# 是cpp的程式碼會被放到cpp資料夾，如果是python或"以外"的都會被放入python資料夾
-# cpp的偵測條件是code裡有沒有 '<iostream>'
+# 會先根據網址的後段部新增資料夾
+# 再根據cpp的程式碼會被放到cpp資料夾，如果是python或"以外"的都會被放入python資料夾
+# cpp的偵測條件是code裡有沒有 '#include'
+
 url_list = ['https://yuihuang.com/syntax/']
 
 # -----------------------------code---------------------------------------------
 #黃惟網站中有題解的會附上Link的連結文字，根據這點去爬網址
-def get_yuihuang_link_url(urls,cpp_path,python_path):
+def get_yuihuang_link_url(url,cpp_path,python_path):
     #把黃惟網站上有關題解Link的網址爬下來
-    for url in urls:
-        link_list = []
-        html = requests.get(url)
-        html.encoding = 'UTF-8'
-        sp = BeautifulSoup(html.text, 'html.parser')
-        all_ahref = sp.find_all('a')
-        #抓文字是Link的連結
-        for a in all_ahref:
-            if a.text == 'Link':
-                link_list.append(a['href'])
-        # 查看爬到的網址為何
-        # print(link_list)
-        get_yuihuang_ans(link_list,cpp_path,python_path)
+    link_list = []
+    html = requests.get(url)
+    html.encoding = 'UTF-8'
+    sp = BeautifulSoup(html.text, 'html.parser')
+    all_ahref = sp.find_all('a')
+    #抓文字是Link的連結
+    for a in all_ahref:
+        if a.text == 'Link':
+            link_list.append(a['href'])
+    # 查看爬到的網址為何
+    # print(link_list)
+    get_yuihuang_ans(link_list,cpp_path,python_path)
 
 def get_yuihuang_ans(link_list,cpp_path,python_path):
     try:
@@ -40,7 +41,7 @@ def get_yuihuang_ans(link_list,cpp_path,python_path):
             #抓取答案
             code_ans = sp.find_all('div',class_='wp-block-syntaxhighlighter-code')
             for ans in code_ans:
-                if '<iostream>' in ans.text:
+                if '#include' in ans.text:
                     ans_list['cpp'].append(ans.text)
                 else:
                     ans_list['python'].append(ans.text)
@@ -77,15 +78,19 @@ def ans_write_file(ans_list,cpp_path,python_path):
             f = open(f'{python_path}/{filename}.py','a')
             f.write('#!/usr/bin/env python \n'+ans_list['python'][index])
             f.close()
+for url in url_list:
+    path = os.getcwd()+f'/{url[21:-1]}/'
+    python_path =path+'python'
+    cpp_path = path+'/cpp'
 
-python_path =os.getcwd()+'/python'
-cpp_path = os.getcwd()+'/cpp'
+    if not os.path.isdir(path):
+        os.mkdir(path)
+        
+    if not os.path.isdir(python_path):
+        os.mkdir(python_path)
 
-if not os.path.isdir(python_path):
-    os.mkdir(python_path)
-
-if not os.path.isdir(cpp_path):
-    os.mkdir(cpp_path)
+    if not os.path.isdir(cpp_path):
+        os.mkdir(cpp_path)
 
 
-get_yuihuang_link_url(url_list,cpp_path,python_path)
+    get_yuihuang_link_url(url,cpp_path,python_path)
